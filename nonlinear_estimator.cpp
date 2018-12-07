@@ -85,6 +85,7 @@ pvv mcmc(vector<vector<double> > W, vector<double> Y) {
 	/* Minimize the energy */
 	while (true) {
 		++total_steps;
+		++step;
 		/* Compute a transition */
 		aux_X = transition(X, generator);
 		aux_energ = energy(W, Y, aux_X);
@@ -97,21 +98,23 @@ pvv mcmc(vector<vector<double> > W, vector<double> Y) {
 			X = aux_X;
 			energ = aux_energ;
 			if (energ < min_energ) {
+				cout << total_steps << " " << beta << " " << energ << "\n";
 				energies.push_back(mk(total_steps, mk(beta, energ)));
 				/* Update minimum values and reset counter */
 				min_energ = energ;
 				min_X = X;
 				step = 0;
 			}
-			++step;
-			/* End the chain if we reached a lower enough energy */
-			if (step == max_steps) {
-				step = 0;
-				X = min_X;
-				beta += beta_step;
-				if (beta >= beta_max)
-					break;
-			}
+		}
+		cout << beta << " " << step << "\n";
+		/* Perform the annealing if we reached a lower enough energy */
+		if (step >= max_steps) {
+			step = 0;
+			X = min_X;
+			beta += beta_step;
+			cout << "Changed beta to " << beta << "\n";
+			if (beta >= beta_max)
+				break;
 		}
 	}
 
@@ -124,7 +127,7 @@ int main(int argc, char **argv) {
 	vector<double> Y;
 	vector<vector<double> > W;
 	ifstream f(argv[1]);
-	ofstream g("out.txt");
+	ofstream g(argv[2]);
 
 	/* Read the features matrix */
 	f >> m >> n;
