@@ -86,7 +86,6 @@ def mcmc(W, Y, ground_truth):
                 betas.append(beta)
                 energies.append(min_energ)
                 errors.append(reconstruction_error(min_X, ground_truth))
-        # print(f'Beta {beta} Step {step}')
 
         # Perform the annealing if we reached a lower enough energy
         if step >= max_steps:
