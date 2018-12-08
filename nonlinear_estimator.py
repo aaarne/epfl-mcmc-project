@@ -2,13 +2,14 @@ import numpy as np
 from argparse import ArgumentParser
 
 
-def init(n):
+def init(n, seed=None):
     '''
     Initialize the input vector
     input:  n - number of elements in the input vector
     output: an input vector with elements generated from a uniform distribution
     in range (0,1)
     '''
+    np.random.seed(seed)
     return np.random.choice([-1, 1], n)
 
 
@@ -25,7 +26,7 @@ def energy(W, Y, X):
     return e.dot(e)
 
 
-def transition(W, Y, X):
+def transition(W, Y, X, seed=None):
     '''
     Return a transition from the current state and its associated energy
     input:  W - features matrix
@@ -34,6 +35,7 @@ def transition(W, Y, X):
     output: the new state and its energy
     '''
     # Sample
+    np.random.seed(seed)
     ind = np.random.choice(X.shape[0])
     new_X = X.copy()
     new_X[ind] = -new_X[ind]
@@ -41,15 +43,25 @@ def transition(W, Y, X):
 
 
 def reconstruction_error(x, ground_truth):
+    '''
+    Compute the reconstruction error for a given estimation
+    input:  x - estimated value of the input vector
+            ground_truth - real value of the input vector
+    output: the reconstruction error
+    '''
     n = x.shape[0]
-    return 1/(4*n) * sum((x - ground_truth)**2)
+    e = x - ground_truth
+    return e.dot(e) / (4 * n)
 
 
-def mcmc(W, Y, ground_truth):
+def mcmc(W, Y, ground_truth, seed=None, debug=False):
     '''
     Run the MCMC algorithm to find the input vector
     input:  W - features matrix
             Y - observations vector
+            ground_truth - the real input vector
+            seed - random seed
+            debug - whether to print info while running the algorithm
     output: an estimation of the input vector along with the evolution of the
     energy
     '''
@@ -58,7 +70,8 @@ def mcmc(W, Y, ground_truth):
     beta, beta_step, beta_max = 0.1, 0.1, 4
 
     # Initialize the input vector
-    min_X = X = init(W.shape[1])
+    np.random.seed(seed)
+    min_X = X = init(W.shape[1], seed)
     min_energ = energ = energy(W, Y, X)
 
     # Initialize the statistics vector
@@ -69,7 +82,7 @@ def mcmc(W, Y, ground_truth):
         total_steps += 1
         step += 1
         # Compute a transition
-        aux_X, aux_energ = transition(W, Y, X)
+        aux_X, aux_energ = transition(W, Y, X, seed)
 
         # Compute the acceptance probability
         accept_prob = min(1, np.exp(-beta * (aux_energ - energ)))
@@ -79,8 +92,9 @@ def mcmc(W, Y, ground_truth):
             X, energ = aux_X, aux_energ
             # Update the minimum energy
             if energ < min_energ:
-                print(f'Reached smaller energy {energ} at step {total_steps} \
-                    and beta {step}')
+                if debug:
+                    print(f'Reached smaller energy {energ} at step \
+{total_steps} and beta {beta}')
                 min_energ, min_X, step = energ, X, 0
                 steps.append(total_steps)
                 betas.append(beta)
@@ -91,11 +105,13 @@ def mcmc(W, Y, ground_truth):
         if step >= max_steps:
             step, X = 0, min_X
             beta += beta_step
-            print(f'Changed beta to {beta}')
+            if debug:
+                print(f'Changed beta to {beta}')
             if beta >= beta_max:
                 break
 
     return min_X, steps, betas, energies, errors
+
 
 if __name__ == '__main__':
     argparser = ArgumentParser()
