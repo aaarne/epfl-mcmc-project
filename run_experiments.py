@@ -1,5 +1,6 @@
 import os
 import numpy as np
+import time
 from argparse import ArgumentParser
 from nonlinear_estimator import mcmc
 from random_input_generator import generate_input
@@ -21,6 +22,8 @@ def run_experiment(alpha, n, num_runs, output, seed=None):
     errors = []
     min_errors = []
     for run in range(num_runs):
+        start = time.time()
+
         # Generate input
         W, X, Y = generate_input(int(alpha * n), n, None, None)
 
@@ -29,6 +32,8 @@ def run_experiment(alpha, n, num_runs, output, seed=None):
         # Keep the minimum reconstruction error obtained
         errors.append(errs[-1])
         min_errors.append(np.min(errs))
+
+        print(f'Run {run+1} of {num_runs} took {time.time()-start:.2f} seconds.')
 
     mean_err = np.mean(errors)
     std_err = np.std(errors)
