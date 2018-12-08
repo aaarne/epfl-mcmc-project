@@ -19,6 +19,7 @@ def run_experiment(alpha, n, num_runs, output, seed=None):
     output: expected value and standard deviation for the given setting
     '''
     errors = []
+    min_errors = []
     for run in range(num_runs):
         # Generate input
         W, X, Y = generate_input(int(alpha * n), n, None, None)
@@ -27,15 +28,18 @@ def run_experiment(alpha, n, num_runs, output, seed=None):
         _, _, _, _, errs = mcmc(W, Y, X)
         # Keep the minimum reconstruction error obtained
         errors.append(errs[-1])
+        min_errors.append(np.min(errs))
 
     mean_err = np.mean(errors)
     std_err = np.std(errors)
+    mean_min_err = np.mean(min_errors)
+    std_min_err = np.std(min_errors)
 
     if output is not None:
         f = open(output, 'w')
-        f.write(f'{mean_err} {std_err}')
+        f.write(f'{mean_err} {std_err} {mean_min_err} {std_min_err}')
 
-    return mean_err, std_err
+    return mean_err, std_err, mean_min_err, std_min_err
 
 
 if __name__ == '__main__':
@@ -52,3 +56,4 @@ if __name__ == '__main__':
     args = argparser.parse_args()
     mean_err, std_err = run_experiment(args.alpha, args.n, args.num_runs, args.output)
     print(f'The mean error is {mean_err} and its standard deviation is {std_err}')
+    print(f'The mean of the minimum errors is {mean_min_err} and their standard deviation is {std_min_err}')
