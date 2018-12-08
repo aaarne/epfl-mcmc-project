@@ -40,7 +40,12 @@ def transition(W, Y, X):
     return new_X, energy(W, Y, new_X)
 
 
-def mcmc(W, Y):
+def reconstruction_error(x, ground_truth):
+    n = x.shape[0]
+    return 1/(4*n) * sum((x - ground_truth)**2)
+
+
+def mcmc(W, Y, ground_truth):
     '''
     Run the MCMC algorithm to find the input vector
     input:  W - features matrix
@@ -57,7 +62,7 @@ def mcmc(W, Y):
     min_energ = energ = energy(W, Y, X)
 
     # Initialize the statistics vector
-    steps, betas, energies = [], [], []
+    steps, betas, energies, errors = [], [], [], []
 
     # Minimize the energy
     while True:
@@ -80,6 +85,7 @@ def mcmc(W, Y):
                 steps.append(total_steps)
                 betas.append(beta)
                 energies.append(min_energ)
+                errors.append(reconstruction_error(min_X, ground_truth))
         # print(f'Beta {beta} Step {step}')
 
         # Perform the annealing if we reached a lower enough energy
@@ -90,8 +96,7 @@ def mcmc(W, Y):
             if beta >= beta_max:
                 break
 
-    return min_X, steps, betas, energies
-
+    return min_X, steps, betas, energies, errors
 
 if __name__ == '__main__':
     argparser = ArgumentParser()
@@ -100,6 +105,8 @@ if __name__ == '__main__':
     argparser.add_argument('--output', type=str, default='output.txt',
         help='output file where the energy evolution and the final prediction \
         will be stored')
+    argparser.add_argument('--input_ref', type=str, default='input_vect.txt',
+        help='file containing the ground truth vector')
 
     args = argparser.parse_args()
     # Read features and observations
@@ -110,14 +117,17 @@ if __name__ == '__main__':
     Y = np.array([float(x) for x in data[-1].split()])
     f.close()
 
+    with open(args.input_ref, 'r') as f:
+        ground_truth = np.array([int(x) for x in f.readline().split()])
+
     # Run the MCMC algorithm
-    min_X, steps, betas, energies = mcmc(W, Y)
+    min_X, steps, betas, energies, errors = mcmc(W, Y, ground_truth)
 
     # Write the data
     f = open(args.output, 'w')
     min_X_str = ' '.join([str(x) for x in min_X]) + '\n'
     f.write(min_X_str)
     for i in range(len(steps)):
-        s = f'{steps[i]} {betas[i]} {energies[i]}\n'
+        s = f'{steps[i]} {betas[i]} {energies[i]} {errors[i]}\n'
         f.write(s)
     f.close()

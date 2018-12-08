@@ -63,7 +63,7 @@ def plot_energy(data, plot_file):
 		plt.plot(xs[key], ys[key])
 	plt.xlabel('Steps')
 	plt.ylabel('Energy')
-	plt.legend(xs.keys(), ncol=3)
+	plt.legend([f'{l:.2f}' for l in xs.keys()], ncol=3)
 	# Save plot
 	plt.savefig(plot_file)
 	plt.show()
