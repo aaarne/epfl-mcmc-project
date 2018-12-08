@@ -40,7 +40,7 @@ def compare_inputs(real, estimate):
 	print(f'F1-score: {f1_score}')
 
 
-def plot_energy(data, plot_file):
+def plot_evolution(data, plot_file, index=2, label='Energy'):
 	'''
 	Plot the data showing how the energy decays during the estimation of the
 	input vector
@@ -54,19 +54,18 @@ def plot_energy(data, plot_file):
 	for i in range(data.shape[0]):
 		if beta != data[i, 1]:
 			xs[data[i, 1]].append(data[i - 1, 0])
-			ys[data[i, 1]].append(data[i - 1, 2])
+			ys[data[i, 1]].append(data[i - 1, index])
 			beta = data[i, 1]
 		xs[data[i, 1]].append(data[i, 0])
-		ys[data[i, 1]].append(data[i, 2])
+		ys[data[i, 1]].append(data[i, index])
 	plt.figure()
 	for key in xs:
 		plt.plot(xs[key], ys[key])
 	plt.xlabel('Steps')
-	plt.ylabel('Energy')
+	plt.ylabel(label)
 	plt.legend([f'{l:.2f}' for l in xs.keys()], ncol=3)
 	# Save plot
 	plt.savefig(plot_file)
-	plt.show()
 
 
 if __name__ == '__main__':
@@ -92,8 +91,13 @@ if __name__ == '__main__':
 	# Compare the input vectors
 	compare_inputs(real_input, estimated_input)
 
+	def plot_file(key):
+		f = args.data.split('output')[1].split('.')[0]
+		f = f'plot{f}_{key}.png'
+		f = os.path.join(args.plot_dir, f)
+		return f
+
 	# Plot the decaying temperature
-	plot_file = args.data.split('output')[1].split('.')[0]
-	plot_file = f'plot{plot_file}.png'
-	plot_file = os.path.join(args.plot_dir, plot_file)
-	plot_energy(plot_data, plot_file)
+	plot_evolution(plot_data, plot_file('energy'), index=2, label='Energy')
+	plot_evolution(plot_data, plot_file('error'), index=3, label='Reconstruction Error')
+	plt.show()
