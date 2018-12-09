@@ -1,7 +1,13 @@
 import numpy as np
 from argparse import ArgumentParser
 
-
+def np_to_string(mat):
+    s = f"{mat.shape[0]} {mat.shape[1]}\n"
+    for row in mat:
+        row = ' '.join(list(map(lambda x: str(x), row)))
+        s += row + '\n'
+    return s
+    
 def generate_input(m, n, out_mat_file, out_in_file, seed=None):
     '''
     Generate the input matrix, observations and real input values
