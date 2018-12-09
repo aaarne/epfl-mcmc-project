@@ -6,7 +6,7 @@ from collections import defaultdict
 from argparse import ArgumentParser
 
 
-def plot_file(data_file, key):
+def plot_file(data_file, plot_dir, key):
 	'''
 	Generate the name of the file to include the plot in
 	input:	key - keyword for the plot
@@ -14,7 +14,7 @@ def plot_file(data_file, key):
 	'''
 	f = data_file.split('output')[1].split('.')[0]
 	f = f'plot{f}_{key}.png'
-	f = os.path.join(args.plot_dir, f)
+	f = os.path.join(plot_dir, f)
 	return f
 
 
@@ -76,16 +76,16 @@ def plot_evolution(data_file, input_file, plot_file, index=2, label='Energy'):
 	compare_inputs(real_input, estimated_input)
 
 	# Split x and y data by beta
-	beta = data[0, 1]
+	beta = plot_data[0, 1]
 	xs = defaultdict(list)
 	ys = defaultdict(list)
-	for i in range(data.shape[0]):
-		if beta != data[i, 1]:
-			xs[data[i, 1]].append(data[i - 1, 0])
-			ys[data[i, 1]].append(data[i - 1, index])
-			beta = data[i, 1]
-		xs[data[i, 1]].append(data[i, 0])
-		ys[data[i, 1]].append(data[i, index])
+	for i in range(plot_data.shape[0]):
+		if beta != plot_data[i, 1]:
+			xs[plot_data[i, 1]].append(plot_data[i - 1, 0])
+			ys[plot_data[i, 1]].append(plot_data[i - 1, index])
+			beta = plot_data[i, 1]
+		xs[plot_data[i, 1]].append(plot_data[i, 0])
+		ys[plot_data[i, 1]].append(plot_data[i, index])
 	plt.figure()
 	for key in xs:
 		plt.plot(xs[key], ys[key])
@@ -144,8 +144,8 @@ if __name__ == '__main__':
 
 	if args.plot_alpha == 'no_alpha':
 		# Plot the decaying temperature
-		plot_evolution(args.data, args.input_ref, plot_file(args.data, 'energy'), index=2, label='Energy')
-		plot_evolution(args.data, plot_file(args.data, 'error'), index=3, label='Reconstruction Error')
+		plot_evolution(args.data, args.input_ref, plot_file(args.data, args.plot_dir, 'energy'), index=2, label='Energy')
+		plot_evolution(args.data, args.input_ref, plot_file(args.data, args.plot_dir, 'error'), index=3, label='Reconstruction Error')
 		plt.show()
 	else:
 		# Plot the reconstruction error as a function of alpha
