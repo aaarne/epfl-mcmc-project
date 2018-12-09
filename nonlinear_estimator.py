@@ -54,7 +54,7 @@ def reconstruction_error(x, ground_truth):
     return e.dot(e) / (4 * n)
 
 
-def mcmc(W, Y, ground_truth, seed=None, debug=False):
+def mcmc(W, Y, ground_truth, seed=None, debug=False, annealing='simple'):
     '''
     Run the MCMC algorithm to find the input vector
     input:  W - features matrix
@@ -65,6 +65,12 @@ def mcmc(W, Y, ground_truth, seed=None, debug=False):
     output: an estimation of the input vector along with the evolution of the
     energy
     '''
+    return {
+        'simple': mcmc_simple,
+    }[annealing](W, Y, ground_truth, seed=seed, debug=debug)
+
+
+def mcmc_simple(W, Y, ground_truth, seed=None, debug=False):
     max_steps = 1000
     total_steps, step = 0, 0
     beta, beta_step, beta_max = 0.1, 0.1, 4
@@ -137,7 +143,7 @@ if __name__ == '__main__':
         ground_truth = np.array([int(x) for x in f.readline().split()])
 
     # Run the MCMC algorithm
-    min_X, steps, betas, energies, errors = mcmc(W, Y, ground_truth)
+    min_X, steps, betas, energies, errors = mcmc(W, Y, ground_truth, debug=True)
 
     # Write the data
     f = open(args.output, 'w')
