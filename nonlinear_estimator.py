@@ -62,6 +62,7 @@ def mcmc(W, Y, ground_truth, seed=None, debug=False, annealing='simple'):
             ground_truth - the real input vector
             seed - random seed
             debug - whether to print info while running the algorithm
+            annealing - annealing strategy
     output: an estimation of the input vector along with the evolution of the
     energy
     '''
