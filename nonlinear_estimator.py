@@ -73,9 +73,10 @@ def mcmc(W, Y, ground_truth, seed=None, debug=False):
     np.random.seed(seed)
     min_X = X = init(W.shape[1], seed)
     min_energ = energ = energy(W, Y, X)
+    error = reconstruction_error(min_X, ground_truth)
 
     # Initialize the statistics vector
-    steps, betas, energies, errors = [], [], [], []
+    steps, betas, energies, errors = [], [], [energ], [error]
 
     # Minimize the energy
     while True:

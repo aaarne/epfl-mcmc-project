@@ -6,7 +6,7 @@ from nonlinear_estimator import mcmc
 from random_input_generator import generate_input
 
 
-def run_experiment(alpha, n, num_runs, output, seed=None):
+def run_experiment(alpha, n, num_runs, output=None, seed=None):
     '''
     Run an experiment to determine the expected value and the standard deviation
     of the reconstruction error for a given number of features and samples
@@ -56,7 +56,7 @@ if __name__ == '__main__':
     argparser.add_argument('--num_runs', type=int, default=100,
         help='number of times to run the experiment')
     argparser.add_argument('--output', type=str, default=None,
-        help='file where to output the ')
+        help='file where to output the expected error and standard devs')
 
     args = argparser.parse_args()
     mean_err, std_err, mean_min_err, std_min_err = run_experiment(args.alpha, args.n, args.num_runs, args.output)
