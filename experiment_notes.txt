@@ -1,6 +1,0 @@
-Alpha | MEAN final | STDDEV final | minimum mean | minimum stddev | Runs
-
-10    | 0.0        | 0.0          | 0.0          | 0.0            | 10
-5     | 0.0        | 0.0          | 0.0          | 0.0            | 10
-e     | 0.0        | 0.0          | 0.0          | 0.0            | 10
-1     | 0.172      | 0.08         | 0.146        | 0.059          | 10
