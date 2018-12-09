@@ -60,5 +60,5 @@ if __name__ == '__main__':
 
     args = argparser.parse_args()
     mean_err, std_err, mean_min_err, std_min_err = run_experiment(args.alpha, args.n, args.num_runs, args.output)
-    print(f'The mean error is {mean_err} and its standard deviation is {std_err}')
-    print(f'The mean of the minimum errors is {mean_min_err} and their standard deviation is {std_min_err}')
+    print(f'The mean error is {mean_err:.6f} and its standard deviation is {std_err:.6f}')
+    print(f'The mean of the minimum errors is {mean_min_err:.6f} and their standard deviation is {std_min_err:.6f}')
