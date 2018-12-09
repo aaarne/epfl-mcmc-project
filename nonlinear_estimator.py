@@ -54,7 +54,29 @@ def reconstruction_error(x, ground_truth):
     return e.dot(e) / (4 * n)
 
 
-def mcmc(W, Y, ground_truth, seed=None, debug=False, annealing='simple'):
+def create_schedule(schedule_name, beta_0=0.1, beta_max=4, steps=39):
+    '''
+    Create a schedule for the simulated annealing parameter beta
+    input:  schedule_name: one of {'linear', 'exponential', 'logarithmic'}
+            beta_0: the smallest value of beta
+            beta_max: the final value of beta
+            steps: the amount of steps
+    output: a function mapping k to the value of beta
+    '''
+
+    alpha_lin = (beta_max-beta_0) / steps
+    alpha_exp = (beta_0/beta_max)**(1/steps)
+    alpha_log = ((beta_max/beta_0) - 1)/(np.log(1+steps))
+
+    return {
+        'linear':       lambda k: beta_0 + alpha_lin * k,
+        'exponential':  lambda k: beta_0 * alpha_exp ** (-k),
+        'logarithmic':  lambda k: beta_0 * (1 + alpha_log * np.log(1+k))
+    }[schedule_name]
+
+
+
+def mcmc(W, Y, ground_truth, seed=None, debug=False, annealing='simple', schedule_type='exponential'):
     '''
     Run the MCMC algorithm to find the input vector
     input:  W - features matrix
@@ -68,16 +90,25 @@ def mcmc(W, Y, ground_truth, seed=None, debug=False, annealing='simple'):
     '''
     return {
         'simple': mcmc_simple,
-    }[annealing](W, Y, ground_truth, seed=seed, debug=debug)
+        'adaptive': mcmc_adaptive
+    }[annealing](W, Y, ground_truth, seed, debug, schedule_type)
 
 
-def mcmc_simple(W, Y, ground_truth, seed=None, debug=False):
+
+def mcmc_adaptive(W, Y, ground_truth, seed, debug, schedule_type):
+    pass
+
+
+def mcmc_simple(W, Y, ground_truth, seed, debug, schedule_type):
+    np.random.seed(seed)
     max_steps = 1000
     total_steps, step = 0, 0
-    beta, beta_step, beta_max = 0.1, 0.1, 4
+    beta_0, beta_max = 0.1, 4
+    k = 0
+    schedule = create_schedule(schedule_type, beta_max=beta_max, beta_0=beta_0)
+    beta = schedule(k)
 
     # Initialize the input vector
-    np.random.seed(seed)
     min_X = X = init(W.shape[1], seed)
     min_energ = energ = energy(W, Y, X)
     error = reconstruction_error(min_X, ground_truth)
@@ -112,7 +143,8 @@ def mcmc_simple(W, Y, ground_truth, seed=None, debug=False):
         # Perform the annealing if we reached a lower enough energy
         if step >= max_steps:
             step, X = 0, min_X
-            beta += beta_step
+            k += 1
+            beta = schedule(k)
             if debug:
                 print(f'Changed beta to {beta}')
             if beta >= beta_max:
