@@ -76,7 +76,7 @@ def create_schedule(schedule_name, beta_0=0.1, beta_max=4, steps=39):
 
 
 
-def mcmc(W, Y, ground_truth, seed=None, debug=False, annealing='simple', schedule_type='exponential'):
+def mcmc(W, Y, ground_truth, seed=None, debug=False, annealing='simple', schedule_type='logarithmic'):
     '''
     Run the MCMC algorithm to find the input vector
     input:  W - features matrix
