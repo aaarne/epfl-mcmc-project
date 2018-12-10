@@ -115,6 +115,7 @@ def mcmc_simple(W, Y, ground_truth, seed, debug, schedule_type):
 
     # Initialize the statistics vector
     steps, betas, energies, errors = [], [], [energ], [error]
+    single_energies = []
 
     # Minimize the energy
     while True:
@@ -133,16 +134,20 @@ def mcmc_simple(W, Y, ground_truth, seed, debug, schedule_type):
             if energ < min_energ:
                 if debug:
                     print(f'Reached smaller energy {energ} at step \
-{total_steps} and beta {beta}')
+{total_steps} and beta {beta}. (Local steps: {step})')
                 min_energ, min_X, step = energ, X, 0
                 steps.append(total_steps)
                 betas.append(beta)
                 energies.append(min_energ)
                 errors.append(reconstruction_error(min_X, ground_truth))
 
+        single_energies.append(energ)
+
+
         # Perform the annealing if we reached a lower enough energy
         if step >= max_steps:
             step, X = 0, min_X
+            # step = 0
             k += 1
             beta = schedule(k)
             if debug:
@@ -150,7 +155,7 @@ def mcmc_simple(W, Y, ground_truth, seed, debug, schedule_type):
             if beta >= beta_max:
                 break
 
-    return min_X, steps, betas, energies, errors
+    return min_X, steps, betas, energies, errors, single_energies
 
 
 if __name__ == '__main__':
@@ -176,7 +181,7 @@ if __name__ == '__main__':
         ground_truth = np.array([int(x) for x in f.readline().split()])
 
     # Run the MCMC algorithm
-    min_X, steps, betas, energies, errors = mcmc(W, Y, ground_truth, debug=True)
+    min_X, steps, betas, energies, errors, single_energies = mcmc(W, Y, ground_truth, debug=True)
 
     # Write the data
     f = open(args.output, 'w')
@@ -186,3 +191,7 @@ if __name__ == '__main__':
         s = f'{steps[i]} {betas[i]} {energies[i]} {errors[i]}\n'
         f.write(s)
     f.close()
+
+    with open('output_energies.txt', 'w') as f:
+        for energ in single_energies:
+            f.write(f'{energ}\n')

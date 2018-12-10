@@ -130,10 +130,25 @@ def plot_alpha(data_file, plot_dir, type):
 	plt.savefig(plot_file)
 
 
+def plot_energies(data_file):
+	with open(data_file, 'r') as f:
+		energies = np.array([float(l) for l in f])
+
+	plt.figure()
+	plt.plot(energies)
+	plt.grid()
+	plt.semilogy()
+	plt.xlabel('Steps')
+	plt.ylabel('Energy')
+
+
+
 if __name__ == '__main__':
 	argparser = ArgumentParser()
 	argparser.add_argument('--data', type=str, default='output.txt',
 		help='the file containing the data to plot and the estimated input')
+	argparser.add_argument('--data_energies', type=str, default='output_energies.txt',
+		help='the file containing the energies of each visited state')
 	argparser.add_argument('--input_ref', type=str, default='input_vect.txt',
 		help='the file containing the real input vector')
 	argparser.add_argument('--plot_dir', type=str, default='plots',
@@ -146,6 +161,7 @@ if __name__ == '__main__':
 		# Plot the decaying temperature
 		plot_evolution(args.data, args.input_ref, plot_file(args.data, args.plot_dir, 'energy'), index=2, label='Energy')
 		plot_evolution(args.data, args.input_ref, plot_file(args.data, args.plot_dir, 'error'), index=3, label='Reconstruction Error')
+		plot_energies(args.data_energies)
 		plt.show()
 	else:
 		# Plot the reconstruction error as a function of alpha
