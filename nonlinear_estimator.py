@@ -26,7 +26,7 @@ def energy(W, Y, X):
     return e.dot(e)
 
 
-def transition(W, Y, X, seed=None):
+def transition(W, Y, X):
     '''
     Return a transition from the current state and its associated energy
     input:  W - features matrix
@@ -35,7 +35,6 @@ def transition(W, Y, X, seed=None):
     output: the new state and its energy
     '''
     # Sample
-    np.random.seed(seed)
     ind = np.random.choice(X.shape[0])
     new_X = X.copy()
     new_X[ind] = -new_X[ind]
@@ -115,28 +114,22 @@ def glauber_dynamics(W, Y, ground_truth, seed, debug, schedule_type):
 
     def generate(x_0):
         x = x_0
+        e = energy(W, Y, x)
         while True:
             # Select random index in [0...n-1]
             i = np.random.randint(n)
 
             # Generate the state with flipped sign at index i 
-            x_tilde = np.copy(x)
-            x_tilde[i] *= -1
-
-            # compute both energies
-            e_x     = energy(W, Y, x)
-            e_tilde_x = energy(W, Y, x_tilde) 
+            x_new, e_new = transition(W, Y, x)
 
             # compute vector of the probabilities
-            p = [   compute_probability(e_x, e_tilde_x,  x[i]),
-                    compute_probability(e_x, e_tilde_x, -x[i])]
+            p = [   compute_probability(e, e_new,  x[i]),
+                    compute_probability(e, e_new, -x[i])]
 
             # choose x or x_tilde according to p
-            if np.random.choice([+1, -1], p=p) == x[i]:
-                e = e_x
-            else:
-                x = x_tilde
-                e = e_tilde_x
+            if np.random.choice([+1, -1], p=p) != x[i]:
+                x = x_new
+                e = e_new
 
             yield x, e
 
