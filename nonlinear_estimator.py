@@ -75,7 +75,7 @@ def create_schedule(schedule_name, beta_0=0.1, beta_max=4, steps=39):
 
 
 
-def mcmc(W, Y, ground_truth, seed=None, debug=False, method='glauber', schedule_type='logarithmic'):
+def mcmc(W, Y, ground_truth, seed=None, debug=False, method='adaptive', schedule_type='logarithmic'):
     '''
     Run the MCMC algorithm to find the input vector
     input:  W - features matrix
@@ -205,7 +205,7 @@ def mcmc_adaptive(W, Y, ground_truth, seed, debug, schedule_type):
             for l in range(L):
                 total_steps += 1                
                 # Compute a transition
-                aux_X, aux_energ = transition(W, Y, X, seed)
+                aux_X, aux_energ = transition(W, Y, X)
 
                 # Compute the acceptance probability
                 accept_prob = min(1, np.exp(-beta * (aux_energ - energ)))
