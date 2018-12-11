@@ -284,7 +284,7 @@ def mcmc_simple(W, Y, ground_truth, seed, debug, schedule_type):
         total_steps += 1
         step += 1
         # Compute a transition
-        aux_X, aux_energ = transition(W, Y, X, seed)
+        aux_X, aux_energ = transition(W, Y, X)
 
         # Compute the acceptance probability
         accept_prob = min(1, np.exp(-beta * (aux_energ - energ)))
