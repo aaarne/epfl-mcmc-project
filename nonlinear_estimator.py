@@ -168,7 +168,104 @@ def glauber_dynamics(W, Y, ground_truth, seed, debug, schedule_type):
 
 
 def mcmc_adaptive(W, Y, ground_truth, seed, debug, schedule_type):
-    pass
+    np.random.seed(seed)
+
+    total_steps, step = 0, 0
+    beta_0, beta_max = 0.1, 4    
+    beta = beta_0
+    T_0 = T_ref = T = 1 / beta_0
+
+    t_ref = 0
+    r = 0.85
+    U_ref = 0
+    alpha = 0.95
+    L = 100
+    N =10
+    epsilon = 1
+    n1 = 1
+    n2 = 5
+
+    # Initialize the input vector
+    min_X = X = init(W.shape[1], seed)
+    min_energ = energ = energy(W, Y, X)
+    error = reconstruction_error(min_X, ground_truth)
+
+    # Initialize the statistics vector
+    steps, betas, energies, errors = [], [], [energ], [error]
+    single_energies = []
+
+    # Minimize the energy
+    while beta < beta_max:
+        dec_steps = 0
+        U_mes = U_avg = 0
+        N_over = 0
+
+        
+        T_ref = T
+        T *= alpha
+        beta = 1 / T
+        if debug:
+            print(f'beta changed to {beta}, T {T}')
+
+        for k in range(N):
+            U_mes = 0
+            for l in range(L):
+                total_steps += 1                
+                # Compute a transition
+                aux_X, aux_energ = transition(W, Y, X, seed)
+
+                # Compute the acceptance probability
+                accept_prob = min(1, np.exp(-beta * (aux_energ - energ)))
+
+                # Decide whether to do the transition or not
+                if np.random.uniform() <= accept_prob:
+                    X, energ = aux_X, aux_energ
+                    # Update the minimum energy
+                    if energ < min_energ:
+                        if debug:
+                            print(f'Reached smaller energy {energ} at step \
+        {total_steps} and beta {beta}. (Local steps: {l})')
+                        min_energ, min_X = energ, X
+                        steps.append(total_steps)
+                        betas.append(beta)
+                        energies.append(min_energ)
+                        errors.append(reconstruction_error(min_X, ground_truth))
+
+                single_energies.append(energ)
+                #calculate new avg energy
+                U_mes += energ
+
+            U_mes /= L
+            U_avg += U_mes 
+
+            if U_mes > U_ref - epsilon:
+                N_over += 1
+
+
+        # Verify equilibrium of energy change
+        t_eq = False
+        if N_over >= n1: #equilibrium achieved
+            t_eq = True
+
+        t_slow = False
+        if N_over >= n2: #too slow
+            t_slow = True
+        if debug:
+            print(f'U_ref {U_ref}, t_eq {t_eq}, t_slow {t_slow}')
+
+        if t_eq:
+            U_ref = U_avg / N
+            T = T_ref
+            if t_slow:
+                alpha = alpha**(1/r)
+                if debug:
+                    print(f'alpha {alpha}')
+        else:
+            alpha = alpha**r
+            if debug:
+                print(f'alpha {alpha}')
+
+    return min_X, steps, betas, energies, errors, single_energies
 
 
 def mcmc_simple(W, Y, ground_truth, seed, debug, schedule_type):
