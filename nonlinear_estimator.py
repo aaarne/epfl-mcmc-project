@@ -76,7 +76,7 @@ def create_schedule(schedule_name, beta_0=0.1, beta_max=4, steps=39):
 
 
 
-def mcmc(W, Y, ground_truth, seed=None, debug=False, annealing='simple', schedule_type='logarithmic'):
+def mcmc(W, Y, ground_truth, seed=None, debug=False, method='glauber', schedule_type='logarithmic'):
     '''
     Run the MCMC algorithm to find the input vector
     input:  W - features matrix
@@ -90,9 +90,81 @@ def mcmc(W, Y, ground_truth, seed=None, debug=False, annealing='simple', schedul
     '''
     return {
         'simple': mcmc_simple,
-        'adaptive': mcmc_adaptive
-    }[annealing](W, Y, ground_truth, seed, debug, schedule_type)
+        'adaptive': mcmc_adaptive,
+        'glauber': glauber_dynamics
+    }[method](W, Y, ground_truth, seed, debug, schedule_type)
 
+
+def glauber_dynamics(W, Y, ground_truth, seed, debug, schedule_type):
+    n = W.shape[1]
+    min_X = X = init(n, seed)
+    min_energ = energy(W, Y, X)
+    error = reconstruction_error(min_X, ground_truth)
+
+    max_steps = 1000
+    total_steps, step = 0, 0
+    beta_0, beta_max = 0.1, 4
+    k = 0
+    schedule = create_schedule(schedule_type, beta_max=beta_max, beta_0=beta_0)
+    beta = schedule(k)
+
+    steps, betas, energies, errors, single_energies = [], [], [], [], []
+
+    def compute_probability(e_x, e_neg_x, sign):
+        return (1 + sign*np.tanh(beta*(e_neg_x - e_x))) / 2
+
+    def generate(x_0):
+        x = x_0
+        while True:
+            # Select random index in [0...n-1]
+            i = np.random.randint(n)
+
+            # Generate the state with flipped sign at index i 
+            x_tilde = np.copy(x)
+            x_tilde[i] *= -1
+
+            # compute both energies
+            e_x     = energy(W, Y, x)
+            e_tilde_x = energy(W, Y, x_tilde) 
+
+            # compute vector of the probabilities
+            p = [   compute_probability(e_x, e_tilde_x,  x[i]),
+                    compute_probability(e_x, e_tilde_x, -x[i])]
+
+            # choose x or x_tilde according to p
+            if np.random.choice([+1, -1], p=p) == x[i]:
+                e = e_x
+            else:
+                x = x_tilde
+                e = e_tilde_x
+
+            yield x, e
+
+    for x, energ in generate(X):
+        single_energies.append(energ)
+        step += 1
+        total_steps += 1
+
+        if energ < min_energ:
+            if debug:
+                print(f'Reached smaller energy {energ} at step {total_steps} and beta {beta}. (Local steps: {step})')
+            min_energ, min_X, step = energ, x, 0
+            steps.append(total_steps)
+            betas.append(beta)
+            energies.append(min_energ)
+            errors.append(reconstruction_error(min_X, ground_truth))
+
+        # Perform the annealing if we reached a lower enough energy
+        if step >= max_steps:
+            step = 0
+            k += 1
+            beta = schedule(k)
+            if debug:
+                print(f'Changed beta to {beta}')
+            if beta >= beta_max:
+                break
+
+    return min_X, steps, betas, energies, errors, single_energies
 
 
 def mcmc_adaptive(W, Y, ground_truth, seed, debug, schedule_type):
