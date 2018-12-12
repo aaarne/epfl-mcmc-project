@@ -3,9 +3,9 @@
 We use Markov Chain Monte Carlo techniques (a Metropolis chain and Glauber dynamics) combined with simulated annealing for a nonlinear optimization objective.
 
 ## Team members
-- Druta Gheorghe
-- Mocanu Alexandru
-- Sachtler Arne
+- Gheorghe Druta
+- Alexandru Mocanu 
+- Arne Sachtler 
 
 ## Code organization
 The code is organized in several modules:
@@ -39,9 +39,9 @@ Parameters:
 | `method` | the algorithm to use. One of `simple`, `adaptive`, `glauber`|
 | `schedule` | the simulated annealing schedule type. One of `linear`, `exponential`, `logarithmic`. Note this property holds for beta, not for the temperature.|
 
-The important part in this script are the functions implementing the several algorithms for solving the problem. The __mcmc__ function provides the option of selecting between three different algorithms: 
-- a simple Metropolis-Hastings chain, 
-- an adaptive Metropolis-Hastings chain 
+The important part in this script are the functions implementing the several algorithms for solving the problem. The `mcmc` function provides the option of selecting between three different algorithms: 
+- a Metropolis-Hastings chain with naïve beta-scheduling, 
+- a Metropolis-Hastings chain with adaptive beta-scheduling, 
 - and Glauber dynamics. 
  
 Moreover, we can also choose between three schedules for the simulated annealing: linear, exponential and logarithmic. Let us describe the MCMC algorithms:
