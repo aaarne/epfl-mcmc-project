@@ -316,7 +316,7 @@ if __name__ == '__main__':
         will be stored')
     argparser.add_argument('--input_ref', type=str, default='input_vect.txt',
         help='file containing the ground truth vector')
-    argparser.add_argument('--method', type=str, default='adaptive',
+    argparser.add_argument('--method', type=str, default='glauber',
         help='MCMC method. One of {simple, adaptive, glauber}')
     argparser.add_argument('--schedule', type=str, default='logarithmic',
         help='Schedule type for simulated annealing. One of {linear, exponential, logarithmic}')
