@@ -54,8 +54,8 @@ def compare_inputs(real, estimate):
 
 def plot_evolution(data_file, input_file, plot_file, index=2, label='Energy'):
 	'''
-	Plot the data showing how the energy decays during the estimation of the
-	input vector
+	Plot the data showing how the energy or the error decays during the
+	estimation of the input vector
 	input:	data_file - file containing the data to be plotted
 			input_file - file containing the real input vector
 			plot_file - file where to save the plot
@@ -140,7 +140,6 @@ def plot_energies(data_file):
 	plt.semilogy()
 	plt.xlabel('Steps')
 	plt.ylabel('Energy')
-
 
 
 if __name__ == '__main__':

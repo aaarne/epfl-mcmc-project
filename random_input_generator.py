@@ -2,12 +2,17 @@ import numpy as np
 from argparse import ArgumentParser
 
 def np_to_string(mat):
+    '''
+    Transform a matrix to a string representation to be written to a file
+    input:  mat - matrix to be converted to string
+    output: string representation of the matrix
+    '''
     s = f"{mat.shape[0]} {mat.shape[1]}\n"
     for row in mat:
         row = ' '.join(list(map(lambda x: str(x), row)))
         s += row + '\n'
     return s
-    
+
 def generate_input(m, n, out_mat_file, out_in_file, seed=None):
     '''
     Generate the input matrix, observations and real input values

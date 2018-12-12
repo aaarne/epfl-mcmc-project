@@ -62,15 +62,14 @@ def create_schedule(schedule_name, beta_0=0.1, beta_max=4, steps=39):
             steps: the amount of steps
     output: a function mapping k to the value of beta
     '''
-
-    alpha_lin = (beta_max-beta_0) / steps
-    alpha_exp = (beta_0/beta_max)**(1/steps)
-    alpha_log = ((beta_max/beta_0) - 1)/(np.log(1+steps))
+    alpha_lin = (beta_max - beta_0) / steps
+    alpha_exp = (beta_0 / beta_max) ** (1 / steps)
+    alpha_log = ((beta_max / beta_0) - 1) / (np.log(1 + steps))
 
     return {
         'linear':       lambda k: beta_0 + alpha_lin * k,
         'exponential':  lambda k: beta_0 * alpha_exp ** (-k),
-        'logarithmic':  lambda k: beta_0 * (1 + alpha_log * np.log(1+k))
+        'logarithmic':  lambda k: beta_0 * (1 + alpha_log * np.log(1 + k))
     }[schedule_name]
 
 
@@ -94,6 +93,158 @@ def mcmc(W, Y, ground_truth, seed=None, debug=False, method='adaptive', schedule
     }[method](W, Y, ground_truth, seed, debug, schedule_type)
 
 
+def mcmc_simple(W, Y, ground_truth, seed, debug, schedule_type):
+    np.random.seed(seed)
+    max_steps = 1000
+    total_steps, step = 0, 0
+    beta_0, beta_max = 0.1, 4
+    k = 0
+    schedule = create_schedule(schedule_type, beta_max=beta_max, beta_0=beta_0)
+    beta = schedule(k)
+
+    # Initialize the input vector
+    min_X = X = init(W.shape[1], seed)
+    min_energ = energ = energy(W, Y, X)
+    error = reconstruction_error(min_X, ground_truth)
+
+    # Initialize the statistics vector
+    steps, betas, energies, errors = [], [], [energ], [error]
+    single_energies = []
+
+    # Minimize the energy
+    while beta < beta_max:
+        total_steps += 1
+        step += 1
+        # Compute a transition
+        aux_X, aux_energ = transition(W, Y, X)
+
+        # Compute the acceptance probability
+        accept_prob = min(1, np.exp(-beta * (aux_energ - energ)))
+
+        # Decide whether to do the transition or not
+        if np.random.uniform() <= accept_prob:
+            X, energ = aux_X, aux_energ
+            # Update the minimum energy
+            if energ < min_energ:
+                if debug:
+                    print(f'Reached smaller energy {energ} at step {total_steps} and beta {beta}. (Local steps: {step})')
+                min_energ, min_X, step = energ, X, 0
+                steps.append(total_steps)
+                betas.append(beta)
+                energies.append(min_energ)
+                errors.append(reconstruction_error(min_X, ground_truth))
+
+        single_energies.append(energ)
+
+        # Perform the annealing if we reached a lower enough energy
+        if step >= max_steps:
+            step, X = 0, min_X
+            k += 1
+            beta = schedule(k)
+            if debug:
+                print(f'Changed beta to {beta}')
+
+    return min_X, steps, betas, energies, errors, single_energies
+
+
+def mcmc_adaptive(W, Y, ground_truth, seed, debug, schedule_type):
+    np.random.seed(seed)
+
+    total_steps, step = 0, 0
+    beta_0, beta_max = 0.1, 4
+    beta = beta_0
+    T_0 = T_ref = T = 1 / beta_0
+
+    t_ref = 0
+    r = 0.85
+    U_ref = 0
+    alpha = 0.95
+    L = 100
+    N =10
+    epsilon = 1
+    n1 = 1
+    n2 = 5
+
+    # Initialize the input vector
+    min_X = X = init(W.shape[1], seed)
+    min_energ = energ = energy(W, Y, X)
+    error = reconstruction_error(min_X, ground_truth)
+
+    # Initialize the statistics vector
+    steps, betas, energies, errors = [], [], [energ], [error]
+    single_energies = []
+
+    # Minimize the energy
+    while beta < beta_max:
+        dec_steps = 0
+        U_mes = U_avg = 0
+        N_over = 0
+
+        T_ref = T
+        T *= alpha
+        beta = 1 / T
+        if debug:
+            print(f'beta changed to {beta}, T {T}')
+
+        for k in range(N):
+            U_mes = 0
+            for l in range(L):
+                total_steps += 1
+                # Compute a transition
+                aux_X, aux_energ = transition(W, Y, X)
+
+                # Compute the acceptance probability
+                accept_prob = min(1, np.exp(-beta * (aux_energ - energ)))
+
+                # Decide whether to do the transition or not
+                if np.random.uniform() <= accept_prob:
+                    X, energ = aux_X, aux_energ
+                    # Update the minimum energy
+                    if energ < min_energ:
+                        if debug:
+                            print(f'Reached smaller energy {energ} at step {total_steps} and beta {beta}. (Local steps: {l})')
+                        min_energ, min_X = energ, X
+                        steps.append(total_steps)
+                        betas.append(beta)
+                        energies.append(min_energ)
+                        errors.append(reconstruction_error(min_X, ground_truth))
+
+                single_energies.append(energ)
+                #calculate new avg energy
+                U_mes += energ
+
+            U_mes /= L
+            U_avg += U_mes
+
+            if U_mes > U_ref - epsilon:
+                N_over += 1
+
+        # Verify equilibrium of energy change
+        t_eq = False
+        if N_over >= n1: #equilibrium achieved
+            t_eq = True
+
+        t_slow = False
+        if N_over >= n2: #too slow
+            t_slow = True
+        if debug:
+            print(f'U_ref {U_ref}, t_eq {t_eq}, t_slow {t_slow}')
+
+        if t_eq:
+            U_ref = U_avg / N
+            T = T_ref
+            if t_slow:
+                alpha = alpha**(1/r)
+                if debug:
+                    print(f'alpha {alpha}')
+        else:
+            alpha = alpha**r
+            if debug:
+                print(f'alpha {alpha}')
+
+    return min_X, steps, betas, energies, errors, single_energies
+
+
 def glauber_dynamics(W, Y, ground_truth, seed, debug, schedule_type):
     n = W.shape[1]
     min_X = X = init(n, seed)
@@ -110,7 +261,7 @@ def glauber_dynamics(W, Y, ground_truth, seed, debug, schedule_type):
     steps, betas, energies, errors, single_energies = [], [], [], [], []
 
     def compute_probability(e_x, e_neg_x, sign):
-        return (1 + sign*np.tanh(beta*(e_neg_x - e_x))) / 2
+        return (1 + sign * np.tanh(beta * (e_neg_x - e_x))) / 2
 
     def generate(x_0):
         x = x_0
@@ -119,7 +270,7 @@ def glauber_dynamics(W, Y, ground_truth, seed, debug, schedule_type):
             # Select random index in [0...n-1]
             i = np.random.randint(n)
 
-            # Generate the state with flipped sign at index i 
+            # Generate the state with flipped sign at index i
             x_new, e_new = transition(W, Y, x)
 
             # compute vector of the probabilities
@@ -160,166 +311,6 @@ def glauber_dynamics(W, Y, ground_truth, seed, debug, schedule_type):
     return min_X, steps, betas, energies, errors, single_energies
 
 
-def mcmc_adaptive(W, Y, ground_truth, seed, debug, schedule_type):
-    np.random.seed(seed)
-
-    total_steps, step = 0, 0
-    beta_0, beta_max = 0.1, 4    
-    beta = beta_0
-    T_0 = T_ref = T = 1 / beta_0
-
-    t_ref = 0
-    r = 0.85
-    U_ref = 0
-    alpha = 0.95
-    L = 100
-    N =10
-    epsilon = 1
-    n1 = 1
-    n2 = 5
-
-    # Initialize the input vector
-    min_X = X = init(W.shape[1], seed)
-    min_energ = energ = energy(W, Y, X)
-    error = reconstruction_error(min_X, ground_truth)
-
-    # Initialize the statistics vector
-    steps, betas, energies, errors = [], [], [energ], [error]
-    single_energies = []
-
-    # Minimize the energy
-    while beta < beta_max:
-        dec_steps = 0
-        U_mes = U_avg = 0
-        N_over = 0
-
-        
-        T_ref = T
-        T *= alpha
-        beta = 1 / T
-        if debug:
-            print(f'beta changed to {beta}, T {T}')
-
-        for k in range(N):
-            U_mes = 0
-            for l in range(L):
-                total_steps += 1                
-                # Compute a transition
-                aux_X, aux_energ = transition(W, Y, X)
-
-                # Compute the acceptance probability
-                accept_prob = min(1, np.exp(-beta * (aux_energ - energ)))
-
-                # Decide whether to do the transition or not
-                if np.random.uniform() <= accept_prob:
-                    X, energ = aux_X, aux_energ
-                    # Update the minimum energy
-                    if energ < min_energ:
-                        if debug:
-                            print(f'Reached smaller energy {energ} at step \
-        {total_steps} and beta {beta}. (Local steps: {l})')
-                        min_energ, min_X = energ, X
-                        steps.append(total_steps)
-                        betas.append(beta)
-                        energies.append(min_energ)
-                        errors.append(reconstruction_error(min_X, ground_truth))
-
-                single_energies.append(energ)
-                #calculate new avg energy
-                U_mes += energ
-
-            U_mes /= L
-            U_avg += U_mes 
-
-            if U_mes > U_ref - epsilon:
-                N_over += 1
-
-
-        # Verify equilibrium of energy change
-        t_eq = False
-        if N_over >= n1: #equilibrium achieved
-            t_eq = True
-
-        t_slow = False
-        if N_over >= n2: #too slow
-            t_slow = True
-        if debug:
-            print(f'U_ref {U_ref}, t_eq {t_eq}, t_slow {t_slow}')
-
-        if t_eq:
-            U_ref = U_avg / N
-            T = T_ref
-            if t_slow:
-                alpha = alpha**(1/r)
-                if debug:
-                    print(f'alpha {alpha}')
-        else:
-            alpha = alpha**r
-            if debug:
-                print(f'alpha {alpha}')
-
-    return min_X, steps, betas, energies, errors, single_energies
-
-
-def mcmc_simple(W, Y, ground_truth, seed, debug, schedule_type):
-    np.random.seed(seed)
-    max_steps = 1000
-    total_steps, step = 0, 0
-    beta_0, beta_max = 0.1, 4
-    k = 0
-    schedule = create_schedule(schedule_type, beta_max=beta_max, beta_0=beta_0)
-    beta = schedule(k)
-
-    # Initialize the input vector
-    min_X = X = init(W.shape[1], seed)
-    min_energ = energ = energy(W, Y, X)
-    error = reconstruction_error(min_X, ground_truth)
-
-    # Initialize the statistics vector
-    steps, betas, energies, errors = [], [], [energ], [error]
-    single_energies = []
-
-    # Minimize the energy
-    while True:
-        total_steps += 1
-        step += 1
-        # Compute a transition
-        aux_X, aux_energ = transition(W, Y, X)
-
-        # Compute the acceptance probability
-        accept_prob = min(1, np.exp(-beta * (aux_energ - energ)))
-
-        # Decide whether to do the transition or not
-        if np.random.uniform() <= accept_prob:
-            X, energ = aux_X, aux_energ
-            # Update the minimum energy
-            if energ < min_energ:
-                if debug:
-                    print(f'Reached smaller energy {energ} at step \
-{total_steps} and beta {beta}. (Local steps: {step})')
-                min_energ, min_X, step = energ, X, 0
-                steps.append(total_steps)
-                betas.append(beta)
-                energies.append(min_energ)
-                errors.append(reconstruction_error(min_X, ground_truth))
-
-        single_energies.append(energ)
-
-
-        # Perform the annealing if we reached a lower enough energy
-        if step >= max_steps:
-            step, X = 0, min_X
-            # step = 0
-            k += 1
-            beta = schedule(k)
-            if debug:
-                print(f'Changed beta to {beta}')
-            if beta >= beta_max:
-                break
-
-    return min_X, steps, betas, energies, errors, single_energies
-
-
 if __name__ == '__main__':
     argparser = ArgumentParser()
     argparser.add_argument('--input', type=str, default='input.txt',
@@ -332,12 +323,11 @@ if __name__ == '__main__':
 
     args = argparser.parse_args()
     # Read features and observations
-    f = open(args.input, 'r')
-    f.readline()
-    data = f.read().split('\n')
-    W = np.array([[float(x) for x in d.split()] for d in data[:-1]])
-    Y = np.array([float(x) for x in data[-1].split()])
-    f.close()
+    with open(args.input, 'r') as f:
+        f.readline()
+        data = f.read().split('\n')
+        W = np.array([[float(x) for x in d.split()] for d in data[:-1]])
+        Y = np.array([float(x) for x in data[-1].split()])
 
     with open(args.input_ref, 'r') as f:
         ground_truth = np.array([int(x) for x in f.readline().split()])
@@ -346,13 +336,12 @@ if __name__ == '__main__':
     min_X, steps, betas, energies, errors, single_energies = mcmc(W, Y, ground_truth, debug=True)
 
     # Write the data
-    f = open(args.output, 'w')
-    min_X_str = ' '.join([str(x) for x in min_X]) + '\n'
-    f.write(min_X_str)
-    for i in range(len(steps)):
-        s = f'{steps[i]} {betas[i]} {energies[i]} {errors[i]}\n'
-        f.write(s)
-    f.close()
+    with open(args.output, 'w') as f:
+        min_X_str = ' '.join([str(x) for x in min_X]) + '\n'
+        f.write(min_X_str)
+        for i in range(len(steps)):
+            s = f'{steps[i]} {betas[i]} {energies[i]} {errors[i]}\n'
+            f.write(s)
 
     with open('output_energies.txt', 'w') as f:
         for energ in single_energies:
