@@ -1,11 +1,11 @@
-## Markov Chains mini-project
+# Markov Chains mini-project
 
-### I) Team members
+## I) Team members
 - Druta Gheorghe
 - Mocanu Alexandru
 - Sachtler Arne
 
-### II) Code organization
+## II) Code organization
 The code is organized in several modules:
 1. Input generator -> `random_input_generator.py`
 2. Nonlinear estimator algorithm -> `nonlinear_estimator.py`
@@ -13,8 +13,8 @@ The code is organized in several modules:
 4. Batch experiment runner -> `experiments.py`
 5. Plotter -> `plot.py`
 
-### III) Code description
-#### 1. Input generator
+## III) Code description
+### 1. Input generator
 Parameters:
 
 | parameter | description |
@@ -26,7 +26,7 @@ Parameters:
 
 Each of the features in W is drawn from a normal distribution of mean 0 and variance 1. X is constructed by extracting its elements uniformly in from {-1, 1}. Using W and X we now compute Y, output everything to the files passed as arguments or just return the matrices, in case those files are not specified. 
 
-#### 2. Nonlinear estimator
+### 2. Nonlinear estimator
 Parameters:
 
 | parameter | description |
@@ -54,7 +54,7 @@ The helper functions used in the algorithms are:
 - `reconstruction_error`: Computes the reconstruction error given an estimation and the real input vector.
 - `create_schedule`: Creates a schedule for annealing beta, either linear, exponential or logarithmic in terms of the number of steps of annealing.
 
-#### 3. Experiment runner
+### 3. Experiment runner
 Parameters:
 
 | parameter | description |
@@ -66,10 +66,10 @@ Parameters:
 
 The point of this script is implementing the `run_experiment` function, which for each of the `num_runs` steps generates a set of inputs W, X, Y and calls the `mcmc` function in the `nonlinear_estimator.py` script to compute the reconstruction error. These errors are collected in an array and they are used for computing the expected value and the standard deviation of the error. We compute these statistics for both the last estimated input vectors as well as for the ones that minimized the reconstruction error in each run. These results are returned by our function and are also stored in the output file, in case it is provided.
 
-#### 4. Batch experiment runner
+### 4. Batch experiment runner
 This script simply calls the `run_experiment` function from the script presented above for alphas ranging between 0.01 and 1.4 with a step of 0.01 between them, for 100 features and 10 runs of the algorithm for each alpha.
 
-#### 5. Plotter
+### 5. Plotter
 Parameters:
 
 | parameter | description |
