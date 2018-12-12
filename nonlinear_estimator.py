@@ -155,7 +155,6 @@ def mcmc_adaptive(W, Y, ground_truth, seed, debug, schedule_type):
     beta = beta_0
     T_0 = T_ref = T = 1 / beta_0
 
-    t_ref = 0
     r = 0.85
     U_ref = 0
     alpha = 0.95
