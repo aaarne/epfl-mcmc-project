@@ -53,7 +53,7 @@ def reconstruction_error(x, ground_truth):
     return e.dot(e) / (4 * n)
 
 
-def create_schedule(schedule_name, beta_0=0.1, beta_max=4, steps=39):
+def create_schedule(schedule_name, beta_0=0.1, beta_max=4, steps=60):
     '''
     Create a schedule for the simulated annealing parameter beta
     input:  schedule_name: one of {'linear', 'exponential', 'logarithmic'}
@@ -74,7 +74,7 @@ def create_schedule(schedule_name, beta_0=0.1, beta_max=4, steps=39):
 
 
 
-def mcmc(W, Y, ground_truth, seed=None, debug=False, method='adaptive', schedule_type='logarithmic'):
+def mcmc(W, Y, ground_truth, seed=None, debug=False, method='simple', schedule_type='logarithmic'):
     '''
     Run the MCMC algorithm to find the input vector
     input:  W - features matrix
@@ -140,7 +140,8 @@ def mcmc_simple(W, Y, ground_truth, seed, debug, schedule_type):
         if step >= max_steps:
             step, X = 0, min_X
             k += 1
-            beta = schedule(k)
+            mu =1 + (energ - min_energ) / energ
+            beta = mu * schedule(k)
             if debug:
                 print(f'Changed beta to {beta}')
 
@@ -153,20 +154,18 @@ def mcmc_adaptive(W, Y, ground_truth, seed, debug, schedule_type):
     total_steps, step = 0, 0
     beta_0, beta_max = 0.1, 4
     beta = beta_0
-    T_0 = T_ref = T = 1 / beta_0
 
-    r = 0.85
-    U_ref = 0
-    alpha = 0.95
+    #Parameters
+    alpha = 0.07
     L = 100
     N =10
     epsilon = 1
-    n1 = 1
-    n2 = 5
+    n1 = 1 # N_over < n1 too fast
+    n2 = 5 # N_over > n2 too slow
 
     # Initialize the input vector
     min_X = X = init(W.shape[1], seed)
-    min_energ = energ = energy(W, Y, X)
+    U_ref = min_energ = energ = energy(W, Y, X)
     error = reconstruction_error(min_X, ground_truth)
 
     # Initialize the statistics vector
@@ -175,16 +174,9 @@ def mcmc_adaptive(W, Y, ground_truth, seed, debug, schedule_type):
 
     # Minimize the energy
     while beta < beta_max:
-        dec_steps = 0
-        U_mes = U_avg = 0
-        N_over = 0
-
-        T_ref = T
-        T *= alpha
-        beta = 1 / T
-        if debug:
-            print(f'beta changed to {beta}, T {T}')
-
+        U_avg = 0
+        N_over = 0 # counts how many sub steps of a cooling step (same beta) are above avarege Energy
+        
         for k in range(N):
             U_mes = 0
             for l in range(L):
@@ -224,22 +216,25 @@ def mcmc_adaptive(W, Y, ground_truth, seed, debug, schedule_type):
             t_eq = True
 
         t_slow = False
-        if N_over >= n2: #too slow
+        if N_over >= n2: # cooling too slow
             t_slow = True
         if debug:
-            print(f'U_ref {U_ref}, t_eq {t_eq}, t_slow {t_slow}')
-
+            print(f'U_ref {U_ref}, U_avg {U_avg/N}, t_eq {t_eq}, t_slow {t_slow}')
+        U_ref = U_avg / N
+        k+=1
+        X = min_X
         if t_eq:
-            U_ref = U_avg / N
-            T = T_ref
             if t_slow:
-                alpha = alpha**(1/r)
-                if debug:
-                    print(f'alpha {alpha}')
-        else:
-            alpha = alpha**r
-            if debug:
-                print(f'alpha {alpha}')
+                mu = (U_avg - min_energ) / U_avg
+                beta = beta + alpha * mu
+            else:
+                beta = beta + alpha
+        else: # cooling too fast, decrese alpha
+            mu =  U_avg / (U_avg - min_energ) 
+            beta = beta + alpha * mu
+
+
+        
 
     return min_X, steps, betas, energies, errors, single_energies
 
