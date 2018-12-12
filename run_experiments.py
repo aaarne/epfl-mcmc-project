@@ -28,7 +28,7 @@ def run_experiment(alpha, n, num_runs, output=None, seed=None):
         W, X, Y = generate_input(int(alpha * n), n, None, None)
 
         # Run the MCMC algorithm and get the reconstruction error
-        _, _, _, _, errs = mcmc(W, Y, X)
+        _, _, _, _, errs, _ = mcmc(W, Y, X)
         # Keep the minimum reconstruction error obtained
         errors.append(errs[-1])
         min_errors.append(np.min(errs))
