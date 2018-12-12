@@ -1,3 +1,6 @@
 __pycache__/
 *.out
 *.txt
+
+plots/plot_error.png
+plots/plot_energy.png
