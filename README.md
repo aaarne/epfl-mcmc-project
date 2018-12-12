@@ -1,6 +1,6 @@
 # Markov Chains and Algorithmic Applications: Mini-Project
 
-We use Markov Chain Monte Carlo techniques (a Metropolis chain and Glauber dynamics) for a nonlinear optimization objective.
+We use Markov Chain Monte Carlo techniques (a Metropolis chain and Glauber dynamics) combined with simulated annealing for a nonlinear optimization objective.
 
 ## Team members
 - Druta Gheorghe
