@@ -49,7 +49,12 @@ Moreover, we can also choose between three schedules for the simulated annealing
 - __simple Metropolis chain__:
 We follow the Metropolis algorithm presented in the homework's description. For the annealing strategy, we adopt the following non-adaptive approach: we keep count of the moments we decrease the energy and we increase beta just in case we did not improve our estimation over more than a fixed number of steps (in our case 1000). The algorithm stops when we've reached a value of beta greater than or equal to a threhold value.
 - __adaptive Metropolis chain__:
-TODO
+We tried an adaptive scheduling algorithm in order to adapt the rate of cooling (change of alpha), based on the dynamics of the avarage energy
+The stategy is applied above another simple schedule type (the current implementation works only for the linear scheduling.
+For each beta step we mesure `U_mes` energies of `N` substeps of length `L` iterations and compare it with `U_avg` calculated at the previous beta.
+if none `U_mes` is bigger then we decrease `alpha`
+if between 1 and 4 `U_mes` are bigger then we decrease consider the cooling to be in an equilibrium
+if more than 5 `U_mes` are bigger then we increase `alpha`
 - __Glauber dynamics__:
 As well as for the Metropolis chain we follow the formulas in the project handout for the implementation. The `generate` generator creates an infinite stream of states and the respective energies. Then, we iterate over the stream in order to analyze the performance of the states and perform the beta-scheduling. By this approach we can keep the fundamental sampling of states and the simulated annealing strategy separated and combine the algorithms.
 
