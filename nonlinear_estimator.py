@@ -159,7 +159,7 @@ def mcmc_adaptive(W, Y, ground_truth, seed, debug, schedule_type):
     alpha = 0.07
     L = 100
     N =10
-    epsilon = 1
+    epsilon = 0.1
     n1 = 1 # N_over < n1 too fast
     n2 = 5 # N_over > n2 too slow
 
@@ -225,12 +225,14 @@ def mcmc_adaptive(W, Y, ground_truth, seed, debug, schedule_type):
         X = min_X
         if t_eq:
             if t_slow:
-                mu = (U_avg - min_energ) / U_avg
-                beta = beta + alpha * mu
+                #change inverse proportional to the difference between avg and minimal
+                mu = (U_avg - min_energ) / U_avg 
+                beta = beta + alpha / mu
             else:
                 beta = beta + alpha
         else: # cooling too fast, decrese alpha
-            mu =  U_avg / (U_avg - min_energ) 
+            #change proportional to the difference between avg and minimal
+            mu = (U_avg - min_energ) / U_avg
             beta = beta + alpha * mu
 
 
@@ -314,7 +316,7 @@ if __name__ == '__main__':
         will be stored')
     argparser.add_argument('--input_ref', type=str, default='input_vect.txt',
         help='file containing the ground truth vector')
-    argparser.add_argument('--method', type=str, default='simple',
+    argparser.add_argument('--method', type=str, default='adaptive',
         help='MCMC method. One of {simple, adaptive, glauber}')
     argparser.add_argument('--schedule', type=str, default='logarithmic',
         help='Schedule type for simulated annealing. One of {linear, exponential, logarithmic}')
