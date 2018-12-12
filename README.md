@@ -1,11 +1,13 @@
-# Markov Chains mini-project
+# Markov Chains and Algorithmic Applications: Mini-Project
 
-## I) Team members
+We use Markov Chain Monte Carlo techniques (a Metropolis chain and Glauber dynamics) for a nonlinear optimization objective.
+
+## Team members
 - Druta Gheorghe
 - Mocanu Alexandru
 - Sachtler Arne
 
-## II) Code organization
+## Code organization
 The code is organized in several modules:
 1. Input generator -> `random_input_generator.py`
 2. Nonlinear estimator algorithm -> `nonlinear_estimator.py`
@@ -13,7 +15,7 @@ The code is organized in several modules:
 4. Batch experiment runner -> `experiments.py`
 5. Plotter -> `plot.py`
 
-## III) Code description
+## Code description
 ### 1. Input generator
 Parameters:
 
@@ -44,8 +46,10 @@ Moreover, we can also choose between three schedules for the simulated annealing
 
 - __simple Metropolis chain__:
 We follow the Metropolis algorithm presented in the homework's description. For the annealing strategy, we adopt the following non-adaptive approach: we keep count of the moments we decrease the energy and we increase beta just in case we did not improve our estimation over more than a fixed number of steps (in our case 1000). The algorithm stops when we've reached a value of beta greater than or equal to a threhold value.
-- __adaptive Metropolis chain__
-- __Glauber dynamics__
+- __adaptive Metropolis chain__:
+TODO
+- __Glauber dynamics__:
+As well as for the Metropolis chain we follow the formulas in the project handout for the implementation. The `generate` generator creates an infinite stream of states and the respective energies. Then, we iterate over the stream in order to analyze the performance of the states and perform the beta-scheduling. By this approach we can keep the fundamental sampling of states and the simulated annealing strategy separated and combine the algorithms.
 
 The helper functions used in the algorithms are:
 - `init`: Gives an initial random estimation for the input vector.
