@@ -1,6 +1,7 @@
 __pycache__/
 *.out
 *.txt
+submission
 
 plots/plot_error.png
 plots/plot_energy.png
