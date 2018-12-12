@@ -319,6 +319,10 @@ if __name__ == '__main__':
         will be stored')
     argparser.add_argument('--input_ref', type=str, default='input_vect.txt',
         help='file containing the ground truth vector')
+    argparser.add_argument('--method', type=str, default='simple',
+        help='MCMC method. One of {simple, adaptive, glauber}')
+    argparser.add_argument('--schedule', type=str, default='logarithmic',
+        help='Schedule type for simulated annealing. One of {linear, exponential, logarithmic}')
 
     args = argparser.parse_args()
     # Read features and observations
@@ -332,7 +336,11 @@ if __name__ == '__main__':
         ground_truth = np.array([int(x) for x in f.readline().split()])
 
     # Run the MCMC algorithm
-    min_X, steps, betas, energies, errors, single_energies = mcmc(W, Y, ground_truth, debug=True)
+    min_X, steps, betas, energies, errors, single_energies =\
+        mcmc(W, Y, ground_truth, 
+            debug=True, 
+            method=args.method, 
+            schedule_type=args.schedule)
 
     # Write the data
     with open(args.output, 'w') as f:

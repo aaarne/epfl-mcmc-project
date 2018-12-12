@@ -36,6 +36,8 @@ Parameters:
 | `input`| file containing W and Y|
 | `output`| file where to write the evolution of the energy and the errors over the algorithm's steps, as well as the final estimated input vector|
 | `input_ref`| file containing the real input vector|
+| `method` | the algorithm to use. One of `simple`, `adaptive`, `glauber`|
+| `schedule` | the simulated annealing schedule type. One of `linear`, `exponential`, `logarithmic`. Note this property holds for beta, not for the temperature.|
 
 The important part in this script are the functions implementing the several algorithms for solving the problem. The __mcmc__ function provides the option of selecting between three different algorithms: 
 - a simple Metropolis-Hastings chain, 
