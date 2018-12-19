@@ -1,4 +1,6 @@
+import os
 import numpy as np
+from scipy.io import loadmat
 from argparse import ArgumentParser
 
 
@@ -176,7 +178,7 @@ def mcmc_adaptive(W, Y, ground_truth, seed, debug, schedule_type):
     while beta < beta_max:
         U_avg = 0
         N_over = 0 # counts how many sub steps of a cooling step (same beta) are above avarege Energy
-        
+
         for k in range(N):
             U_mes = 0
             for l in range(L):
@@ -226,7 +228,7 @@ def mcmc_adaptive(W, Y, ground_truth, seed, debug, schedule_type):
         if t_eq:
             if t_slow:
                 #change inverse proportional to the difference between avg and minimal
-                mu = (U_avg - min_energ) / U_avg 
+                mu = (U_avg - min_energ) / U_avg
                 beta = beta + alpha / mu
             else:
                 beta = beta + alpha
@@ -236,7 +238,7 @@ def mcmc_adaptive(W, Y, ground_truth, seed, debug, schedule_type):
             beta = beta + alpha * mu
 
 
-        
+
 
     return min_X, steps, betas, energies, errors, single_energies
 
@@ -320,32 +322,49 @@ if __name__ == '__main__':
         help='MCMC method. One of {simple, adaptive, glauber}')
     argparser.add_argument('--schedule', type=str, default='logarithmic',
         help='Schedule type for simulated annealing. One of {linear, exponential, logarithmic}')
+    argparser.add_argument('--input_type', type=str, default='txt',
+        help='type of input file')
+    argparser.add_argument('--store_energy', type=str, default='True',
+        help='whether to also store the energy evolution along with the final \
+        prediction')
 
     args = argparser.parse_args()
     # Read features and observations
-    with open(args.input, 'r') as f:
-        f.readline()
-        data = f.read().split('\n')
-        W = np.array([[float(x) for x in d.split()] for d in data[:-1]])
-        Y = np.array([float(x) for x in data[-1].split()])
+    if args.input_type == 'txt':
+        with open(args.input, 'r') as f:
+            f.readline()
+            data = f.read().split('\n')
+            W = np.array([[float(x) for x in d.split()] for d in data[:-1]])
+            Y = np.array([float(x) for x in data[-1].split()])
+    elif args.input_type == 'mat':
+        data = loadmat(args.input)
+        W, Y = data['W'], data['Y'].reshape(-1)
 
-    with open(args.input_ref, 'r') as f:
-        ground_truth = np.array([int(x) for x in f.readline().split()])
+    # Also read the groundtruth if it exists
+    ground_truth = np.ones(W.shape[1])
+    if os.path.exists(args.input_ref):
+        if args.input_type == 'txt':
+            with open(args.input_ref, 'r') as f:
+                ground_truth = np.array([int(x) for x in f.readline().split()])
+        elif args.input_type == 'mat':
+            ground_truth = loadmat(args.input_ref)['X'].reshape(-1)
 
     # Run the MCMC algorithm
     min_X, steps, betas, energies, errors, single_energies =\
-        mcmc(W, Y, ground_truth, 
-            debug=True, 
-            method=args.method, 
+        mcmc(W, Y, ground_truth,
+            debug=True,
+            method=args.method,
             schedule_type=args.schedule)
 
     # Write the data
     with open(args.output, 'w') as f:
         min_X_str = ' '.join([str(x) for x in min_X]) + '\n'
         f.write(min_X_str)
-        for i in range(len(steps)):
-            s = f'{steps[i]} {betas[i]} {energies[i]} {errors[i]}\n'
-            f.write(s)
+        # Also store the energy evolution
+        if args.store_energy == 'True':
+            for i in range(len(steps)):
+                s = f'{steps[i]} {betas[i]} {energies[i]} {errors[i]}\n'
+                f.write(s)
 
     with open('output_energies.txt', 'w') as f:
         for energ in single_energies:
