@@ -360,6 +360,7 @@ if __name__ == '__main__':
     with open(args.output, 'w') as f:
         min_X_str = ' '.join([str(x) for x in min_X]) + '\n'
         f.write(min_X_str)
+        f.write(str(energies[-1]))
         # Also store the energy evolution
         if args.store_energy == 'True':
             for i in range(len(steps)):
